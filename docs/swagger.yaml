@@ -1,0 +1,11 @@
+basePath: /
+host: localhost:3000
+info:
+  contact: {}
+  description: A simple Task Manager API using Fiber and Swagger implemeneted in Go
+  title: Taskinator API
+  version: "1.0"
+paths: {}
+schemes:
+- http
+swagger: "2.0"
