@@ -1,11 +1,55 @@
 basePath: /
+definitions:
+  main.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
 host: localhost:3000
 info:
   contact: {}
   description: A simple Task Manager API using Fiber and Swagger implemeneted in Go
   title: Taskinator API
   version: "1.0"
-paths: {}
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Logs in a user and returns a JWT token
+      parameters:
+      - description: Login Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/main.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token response
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User Login
+      tags:
+      - Authentication
 schemes:
 - http
 swagger: "2.0"

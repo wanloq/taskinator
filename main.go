@@ -30,6 +30,12 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
+// Dummy user credentials
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 var secretKey = []byte("your_secret_key")
 
 // @title Taskinator API
@@ -40,22 +46,22 @@ var secretKey = []byte("your_secret_key")
 // @schemes http
 func main() {
 
-	// Generate JWT
-	tokenString, err := GenerateJWT()
-	if err != nil {
-		fmt.Println("Error generating token:", err)
-		return
-	}
-	fmt.Println("\nGenerated Token:", tokenString)
-	// tokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDE2MzM0NTEsInJvbGUiOiJhZG1pbiIsInVzZXJfaWQiOiJ3YW4ifQ.cg7wNVP_-RZgbJy5_EQusUtinWE2wtd09t71oUmc5mc"
+	// // Generate JWT
+	// tokenString, err := GenerateJWT()
+	// if err != nil {
+	// 	fmt.Println("Error generating token:", err)
+	// 	return
+	// }
+	// fmt.Println("\nGenerated Token:", tokenString)
+	// // tokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDE2MzM0NTEsInJvbGUiOiJhZG1pbiIsInVzZXJfaWQiOiJ3YW4ifQ.cg7wNVP_-RZgbJy5_EQusUtinWE2wtd09t71oUmc5mc"
 
-	// Verify JWT
-	token, err := VerifyJWT(tokenString)
-	if err != nil {
-		fmt.Println("Error verifying token:", err)
-		return
-	}
-	fmt.Println("\nVerified Token:", token)
+	// // Verify JWT
+	// token, err := VerifyJWT(tokenString)
+	// if err != nil {
+	// 	fmt.Println("Error verifying token:", err)
+	// 	return
+	// }
+	// fmt.Println("\nVerified Token:", token)
 
 	// Server code
 	app := fiber.New()
@@ -63,6 +69,8 @@ func main() {
 
 	// Routes
 	app.Get("/swagger/*", swagger.HandlerDefault)
+	// Login Route
+	app.Post("/login", Login)
 	app.Get("/all", GetAll)
 	app.Post("/task", CreateTask)
 	app.Patch("/task", FinishTask)
@@ -75,6 +83,37 @@ func main() {
 // Home
 func Home(c *fiber.Ctx) error {
 	return c.SendString("Welcome to your Taskinator!")
+}
+
+// @Summary User Login
+// @Description Logs in a user and returns a JWT token
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login Request"
+// @Success 200 {object} map[string]string "Token response"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Unauthorized"
+// @Router /login [post]
+func Login(c *fiber.Ctx) error {
+
+	var req LoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	// Dummy validation (replace with DB check)
+	if req.Username != "admin" || req.Password != "password" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
+	}
+
+	// Generate JWT Token
+	token, err := GenerateJWT(req.Username, "admin")
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not generate token"})
+	}
+
+	return c.JSON(fiber.Map{"token": token})
 }
 
 // View all tasks
@@ -141,11 +180,12 @@ func DeleteTask(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Task not found"})
 }
 
-func GenerateJWT() (string, error) {
+func GenerateJWT(userID, role string) (string, error) {
 	claims := CustomClaims{
-		UserID: "wan",
-		Role:   "admin",
+		UserID: userID,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 		},
 	}
