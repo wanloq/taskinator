@@ -1,0 +1,15 @@
+// Start and enable psql
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+// Switch to default server
+sudo -i -u postgres
+psql
+//
+psql -U wanloq -d taskinator -h localhost
+
+
+
+// Setting up postgres migrations with golang-migrate
+** go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+migrate create -ext sql -dir db/migrations -seq create_users_table
+migrate -database "postgres://wanloq:admin@localhost:5432/taskinator?sslmode=disable" -path db/migrations up
