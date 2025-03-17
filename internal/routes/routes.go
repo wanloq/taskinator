@@ -1,7 +1,7 @@
 package routes
 
 import (
-	controllers "github.com/wanloq/taskinator/internal/controller"
+	"github.com/wanloq/taskinator/internal/controllers"
 	"github.com/wanloq/taskinator/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
