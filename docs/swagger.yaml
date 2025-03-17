@@ -1,11 +1,28 @@
 basePath: /
 definitions:
-  main.LoginRequest:
+  dto.LoginRequest:
     properties:
+      email:
+        type: string
       password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
         type: string
       username:
         type: string
+    required:
+    - email
+    - password
+    - username
     type: object
 host: localhost:3000
 info:
@@ -14,18 +31,19 @@ info:
   title: Taskinator API
   version: "1.0"
 paths:
-  /login:
+  /api/login:
     post:
       consumes:
       - application/json
-      description: Logs in a user and returns a JWT token
+      description: 'LoginUser handles user authentication: Logs in a user and returns
+        a JWT token'
       parameters:
       - description: Login Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/main.LoginRequest'
+          $ref: '#/definitions/dto.LoginRequest'
       produces:
       - application/json
       responses:
@@ -50,9 +68,46 @@ paths:
       summary: User Login
       tags:
       - Authentication
-  /profile:
+  /api/register:
+    post:
+      consumes:
+      - application/json
+      description: 'RegisterUser handles user registration: Creates a new user and
+        returns a success message or an error.'
+      parameters:
+      - description: User registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User successfully registered
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User Registration
+      tags:
+      - Registration
+  /api/user/profile:
     get:
-      description: Returns user profile if JWT is valid
+      description: Returns the logged-in user's profile if JWT is valid
       produces:
       - application/json
       responses:

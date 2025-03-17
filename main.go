@@ -3,19 +3,17 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/swagger"
 	"github.com/joho/godotenv"
 
 	"github.com/golang-jwt/jwt/v4"
-	_ "github.com/wanloq/taskinator/database"
 	_ "github.com/wanloq/taskinator/docs"
-	"github.com/wanloq/taskinator/internal/db"
-	"github.com/wanloq/taskinator/internal/models"
-	"github.com/wanloq/taskinator/internal/repositories"
+	"github.com/wanloq/taskinator/internal/config"
+	"github.com/wanloq/taskinator/internal/routes"
 )
 
 type Task struct {
@@ -31,15 +29,10 @@ var tasks = []Task{
 }
 
 type CustomClaims struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
+	UserID    uint   `json:"user_id"`
+	UserEmail string `json:"user_email"`
+	Role      string `json:"role"`
 	jwt.RegisteredClaims
-}
-
-// Dummy user credentials
-type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
 }
 
 var secretKey = []byte("your_secret_key")
@@ -54,49 +47,41 @@ var secretKey = []byte("your_secret_key")
 // @in header
 // @name Authorization
 
-func main() { // Load environment variables
+func main() {
+	// Load environment variables
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
 	// Connect to database
-	db.ConnectDatabase()
-	// Create a test user
-	user := &models.User{
-		Username:      "john_doe",
-		Email:         "john@example.com",
-		Password_Hash: "securepassword",
-	}
-
-	err = repositories.CreateUser(user)
+	db, err := config.ConnectDB()
 	if err != nil {
-		log.Fatal("Error creating user:", err)
+		log.Fatalf("Could not connect to the database: %v", err)
 	}
-	fmt.Println("User created successfully!")
+	defer config.CloseDB(db)
 
-	// Fetch the user by email
-	fetchedUser, err := repositories.GetUserByEmail("john@example.com")
-	if err != nil {
-		log.Fatal("Error fetching user:", err)
+	// Run Migrations
+	if err := config.RunMigrations(); err != nil {
+		log.Fatalf("Migration failed: %v", err)
 	}
-	fmt.Printf("Fetched User: %+v\n", fetchedUser)
 
 	// Server code
 	app := fiber.New()
 	app.Use(logger.New())
 
-	// Routes
-	app.Get("/swagger/*", swagger.HandlerDefault)
-	app.Post("/login", Login)
-	app.Get("/profile", Profile)
-	app.Get("/all", GetAll)
-	app.Post("/task", CreateTask)
-	app.Patch("/task", FinishTask)
+	// Register routes
+	routes.SetupRoutes(app)
 
-	log.Println("\nServer running @ http://localhost:3000/swagger/")
-	log.Fatal(app.Listen(":3000"))
-	// Handlers
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+
+	log.Printf("Server running on http://localhost:%s/swagger/", port)
+	if err := app.Listen(fmt.Sprintf(":%s", port)); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }
 
 // Home
@@ -168,68 +153,38 @@ func DeleteTask(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Task not found"})
 }
 
-// @Summary User Login
-// @Description Logs in a user and returns a JWT token
-// @Tags Authentication
-// @Accept json
-// @Produce json
-// @Param request body LoginRequest true "Login Request"
-// @Success 200 {object} map[string]string "Token response"
-// @Failure 400 {object} map[string]string "Invalid request"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Router /login [post]
-func Login(c *fiber.Ctx) error {
-	var req LoginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
-	}
+// // @Summary Get user profile
+// // @Description Returns user profile if JWT is valid
+// // @Tags Profile
+// // @Security BearerAuth
+// // @Produce json
+// // @Success 200 {object} map[string]string "User profile"
+// // @Failure 401 {object} map[string]string "Unauthorized"
+// // @Router /profile [get]
+// func Profile(c *fiber.Ctx) error {
+// 	authHeader := c.Get("Authorization")
+// 	if authHeader == "" {
+// 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
+// 	}
 
-	// Dummy validation (to be replaced with DB check)
-	if req.Username != "admin" || req.Password != "password" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
-	}
+// 	tokenString := authHeader[len("Bearer "):]
+// 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+// 		return secretKey, nil
+// 	})
 
-	// Generate JWT Token
-	token, err := GenerateJWT(req.Username, "admin")
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not generate token"})
-	}
+// 	if err != nil || !token.Valid {
+// 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
+// 	}
 
-	return c.JSON(fiber.Map{"token": token})
-}
+// 	claims, _ := token.Claims.(*CustomClaims)
+// 	return c.JSON(fiber.Map{
+// 		"user_id":   claims.UserID,
+// 		"role":      claims.Role,
+// 		"issued_at": claims.IssuedAt.Time.Format(time.RFC3339),
+// 	})
+// }
 
-// @Summary Get user profile
-// @Description Returns user profile if JWT is valid
-// @Tags Profile
-// @Security BearerAuth
-// @Produce json
-// @Success 200 {object} map[string]string "User profile"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Router /profile [get]
-func Profile(c *fiber.Ctx) error {
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
-	}
-
-	tokenString := authHeader[len("Bearer "):]
-	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
-		return secretKey, nil
-	})
-
-	if err != nil || !token.Valid {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
-	}
-
-	claims, _ := token.Claims.(*CustomClaims)
-	return c.JSON(fiber.Map{
-		"user_id":   claims.UserID,
-		"role":      claims.Role,
-		"issued_at": claims.IssuedAt.Time.Format(time.RFC3339),
-	})
-}
-
-func GenerateJWT(userID, role string) (string, error) {
+func GenerateJWT(userID uint, userEmail, role string) (string, error) {
 	// var req TokenRequest
 	claims := CustomClaims{
 		UserID: userID,

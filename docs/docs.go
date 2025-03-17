@@ -15,9 +15,9 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/login": {
+        "/api/login": {
             "post": {
-                "description": "Logs in a user and returns a JWT token",
+                "description": "LoginUser handles user authentication: Logs in a user and returns a JWT token",
                 "consumes": [
                     "application/json"
                 ],
@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/main.LoginRequest"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
@@ -70,14 +70,69 @@ const docTemplate = `{
                 }
             }
         },
-        "/profile": {
+        "/api/register": {
+            "post": {
+                "description": "RegisterUser handles user registration: Creates a new user and returns a success message or an error.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Registration"
+                ],
+                "summary": "User Registration",
+                "parameters": [
+                    {
+                        "description": "User registration request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User successfully registered",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/profile": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns user profile if JWT is valid",
+                "description": "Returns the logged-in user's profile if JWT is valid",
                 "produces": [
                     "application/json"
                 ],
@@ -109,11 +164,35 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "main.LoginRequest": {
+        "dto.LoginRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
+                "email": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
                 },
                 "username": {
                     "type": "string"
