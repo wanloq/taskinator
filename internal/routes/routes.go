@@ -2,7 +2,6 @@ package routes
 
 import (
 	"github.com/wanloq/taskinator/internal/controllers"
-	"github.com/wanloq/taskinator/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
@@ -21,7 +20,8 @@ func SetupRoutes(app *fiber.App) {
 	// app.Patch("/task", FinishTask)
 
 	// Protected routes (Require authentication)
-	protected := api.Group("/user", middleware.JWTMiddleware)
-	protected.Get("/profile", controllers.GetUserProfile)
-	// protected.Post("/update", controllers.UpdateUser)
+	// protected := api.Group("/user", middleware.JWTMiddleware)
+	// protected.Get("/profile", controllers.GetUserProfile)
+	// protected.Put("/update", controllers.UpdateUserProfile)
+	// protected.Delete("/delete", controllers.DeleteUser)
 }

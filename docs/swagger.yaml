@@ -24,6 +24,19 @@ definitions:
     - password
     - username
     type: object
+  dto.UpdateRequest:
+    properties:
+      email:
+        type: string
+      password:
+        description: Optional
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - username
+    type: object
 host: localhost:3000
 info:
   contact: {}
@@ -105,9 +118,39 @@ paths:
       summary: User Registration
       tags:
       - Registration
-  /api/user/profile:
+  /user/delete:
+    delete:
+      description: DeleteUserProfile Removes the authenticated user's profile if JWT
+        is valid
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user profile
+      tags:
+      - Delete Profile
+  /user/profile:
     get:
-      description: Returns the logged-in user's profile if JWT is valid
+      description: Returns the currently logged-in user's profile if JWT is valid
       produces:
       - application/json
       responses:
@@ -128,6 +171,45 @@ paths:
       summary: Get user profile
       tags:
       - Profile
+  /user/update:
+    put:
+      consumes:
+      - application/json
+      description: UpdateUserProfile updates the authenticated user's profile if JWT
+        is valid
+      parameters:
+      - description: Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile Updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "501":
+          description: User Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Update Profile
 schemes:
 - http
 securityDefinitions:

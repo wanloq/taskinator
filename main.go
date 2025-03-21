@@ -8,7 +8,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/joho/godotenv"
 
 	"github.com/golang-jwt/jwt/v4"
 	_ "github.com/wanloq/taskinator/docs"
@@ -48,10 +47,9 @@ var secretKey = []byte("your_secret_key")
 // @name Authorization
 
 func main() {
-	// Load environment variables
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	// Load config
+	if err := config.LoadConfig(); err != nil {
+		log.Fatalf("Error loading config: %v", err)
 	}
 
 	// Connect to database
@@ -70,8 +68,9 @@ func main() {
 	app := fiber.New()
 	app.Use(logger.New())
 
-	// Register routes
+	// Routes
 	routes.SetupRoutes(app)
+	routes.SetupUserRoutes(app)
 
 	port := os.Getenv("PORT")
 	if port == "" {

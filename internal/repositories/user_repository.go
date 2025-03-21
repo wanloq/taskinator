@@ -20,3 +20,22 @@ func GetUserByEmail(email string) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+// GetUserByID retrieves a user by ID from the database
+func GetUserByID(userID uint) (*models.User, error) {
+	var user models.User
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// UpdateUser updates an existing user in the database
+func UpdateUser(user *models.User) error {
+	return config.DB.Save(user).Error
+}
+
+// UpdateUser updates an existing user in the database
+func DeleteUser(user *models.User) error {
+	return config.DB.Delete(user).Error
+}

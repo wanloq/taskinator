@@ -5,22 +5,13 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/wanloq/taskinator/internal/config"
+	"github.com/wanloq/taskinator/internal/dto"
 )
-
-// JWTSecretKey should be stored securely
-var JWTSecretKey = []byte("your_secret_key") // Use env variables in production
-
-// Claims struct for JWT
-type Claims struct {
-	UserID uint   `json:"user_id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
-	jwt.RegisteredClaims
-}
 
 // GenerateJWT creates a JWT token
 func GenerateJWT(userID uint, email, role string) (string, error) {
-	claims := Claims{
+	claims := dto.Claims{
 		UserID: userID,
 		Email:  email,
 		Role:   role,
@@ -31,20 +22,20 @@ func GenerateJWT(userID uint, email, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(JWTSecretKey)
+	return token.SignedString(config.JWTSecretKey)
 }
 
 // VerifyJWT verifies and extracts claims from a token
-func VerifyJWT(tokenString string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(t *jwt.Token) (interface{}, error) {
-		return JWTSecretKey, nil
+func VerifyJWT(tokenString string) (*dto.Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &dto.Claims{}, func(t *jwt.Token) (interface{}, error) {
+		return config.JWTSecretKey, nil
 	})
 
 	if err != nil {
 		return nil, errors.New("invalid token")
 	}
 
-	claims, ok := token.Claims.(*Claims)
+	claims, ok := token.Claims.(*dto.Claims)
 	if !ok || !token.Valid {
 		return nil, errors.New("invalid token claims")
 	}

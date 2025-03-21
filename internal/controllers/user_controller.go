@@ -84,23 +84,3 @@ func LoginUser(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"token": token})
 }
-
-// @Summary Get user profile
-// @Description Returns the logged-in user's profile if JWT is valid
-// @Tags Profile
-// @Security BearerAuth
-// @Produce json
-// @Success 200 {object} map[string]string "User profile"
-// @Failure 401 {object} map[string]string "Unauthorized"
-// @Router /api/user/profile [get]
-func GetUserProfile(c *fiber.Ctx) error {
-	userID := c.Locals("user_id")
-	email := c.Locals("email")
-	role := c.Locals("role")
-
-	return c.JSON(fiber.Map{
-		"user_id": userID,
-		"email":   email,
-		"role":    role,
-	})
-}
