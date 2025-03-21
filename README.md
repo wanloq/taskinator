@@ -1,9 +1,4 @@
-Here's your **README.md** properly formatted for GitHub with correct Markdown syntax:  
-
----
-
-```md
-# 🚀 Taskinator
+#  Taskinator
 
 Taskinator is a task management system built using the **Fiber framework**, **PostgreSQL**, and **Golang best practices**. This project serves as an exploration of backend development, authentication, database management, and API design in Golang.
 
@@ -102,5 +97,3 @@ This project is licensed under the **MIT License**.
 - Designed to be scalable and easily extendable.
 
 ---
-
-
