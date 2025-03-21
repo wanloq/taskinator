@@ -17,18 +17,63 @@ Taskinator is a task management system built using the **Fiber framework**, **Po
 ## 📂 Project Structure
 
 ```
-taskinator/
-│── config/            # Configuration files (DB connection, environment variables)
-│── controllers/       # API handlers for user & task management
-│── middleware/        # Authentication & role-based access control
-│── models/            # Database models (User, Task)
-│── repositories/      # Database operations & queries
-│── routes/            # API route definitions
-│── utils/             # Helper functions (JWT, password hashing)
-│── migrations/        # SQL migration files (golang-migrate)
-│── main.go            # Entry point of the application
-│── go.mod             # Go module dependencies
-│── README.md          # Project documentation
+
+📂 taskinator/
+│── 📂 .github/workflows/               # GitHub Actions CI/CD workflow
+│   └── go.yml                           # Go CI pipeline
+│
+│── 📂 db/migrations/                     # Database migrations (SQL files)
+│   ├── 000001_create_users_table.up.sql
+│   ├── 000001_create_users_table.down.sql
+│   ├── 000002_add_updated_at_to_users.up.sql
+│   ├── 000002_add_updated_at_to_users.down.sql
+│   ├── 000003_add_deleted_at_to_users.up.sql
+│   ├── 000003_add_deleted_at_to_users.down.sql
+│   ├── 000004_add_password_at_to_users.up.sql
+│   ├── 000004_add_password_at_to_users.down.sql
+│
+│── 📂 docs/                              # API Documentation (Swagger, Postman, etc.)
+│
+│── 📂 internal/                           # Core application code
+│   │── 📂 config/                        # Configurations and database setup
+│   │   ├── .air.toml                     # Live reload config for Air
+│   │   ├── config.go                     # App configuration handling
+│   │   ├── db.go                         # Database connection logic
+│   │   ├── migrations.go                 # Migration handling
+│   │
+│   │── 📂 controllers/                   # Route handlers (business logic)
+│   │   ├── user_controller.go            # User-related logic
+│   │
+│   │── 📂 dto/                           # Data Transfer Objects (DTOs)
+│   │   ├── auth_dto.go                   # DTOs for authentication
+│   │
+│   │── 📂 middleware/                    # Middleware for authentication, logging, etc.
+│   │   ├── auth_middleware.go            # Authentication middleware
+│   │
+│   │── 📂 models/                        # Database models
+│   │   ├── user.go                       # User model definition
+│   │
+│   │── 📂 repositories/                  # Database query logic
+│   │   ├── user_repository.go            # User data access logic
+│   │
+│   │── 📂 routes/                        # API route definitions
+│   │   ├── routes.go                     # Main route registry
+│   │   ├── user_routes.go                # User-specific routes
+│   │
+│   │── 📂 utils/                         # Utility functions
+│   │   ├── jwt.go                        # JWT token handling
+│   │   ├── password.go                   # Password hashing and validation
+│
+│── 📂 task-manager-frontend/              # Frontend (if applicable)
+│── 📂 tmp/                                # Temporary files
+│── .env                                  # Environment variables (DO NOT COMMIT!)
+│── .env.example                          # Example environment file
+│── .gitignore                            # Git ignore rules
+│── go.mod                                # Go module dependencies
+│── go.sum                                # Go module checksums
+│── main.go                               # Main application entry point
+│── README.md                             # Project documentation
+
 ```
 
 ## 🛠️ Setup & Installation
