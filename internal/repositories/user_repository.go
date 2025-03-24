@@ -39,3 +39,21 @@ func UpdateUser(user *models.User) error {
 func DeleteUser(user *models.User) error {
 	return config.DB.Delete(user).Error
 }
+
+// UpdateUserPassword updates a user's password by email
+func UpdateUserPassword(email string, newPasswordHash string) error {
+	result := config.DB.Model(&models.User{}).Where("email = ?", email).Update("password_hash", newPasswordHash)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// VerifyUserEmail sets the 'is_verified' field to true
+func VerifyUserEmail(email string) error {
+	result := config.DB.Model(&models.User{}).Where("email = ?", email).Update("is_verified", true)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}

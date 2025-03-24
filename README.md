@@ -140,5 +140,6 @@ This project is licensed under the **MIT License**.
 - This project follows **Golang best practices** (layered architecture).
 - Uses **golang-migrate** instead of `AutoMigrate` for production readiness.
 - Designed to be scalable and easily extendable.
+- It is an attempt at creating a complete project and avail myself and any interested other developers of the best learning experience I can get.
 
 ---

@@ -24,12 +24,36 @@ definitions:
     - password
     - username
     type: object
+  dto.RequestEmailVerification:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.ResetPasswordRequest:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+  dto.ResetRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   dto.UpdateRequest:
     properties:
       email:
         type: string
       password:
-        description: Optional
         type: string
       username:
         type: string
@@ -118,7 +142,7 @@ paths:
       summary: User Registration
       tags:
       - Registration
-  /user/delete:
+  /user/admin/delete-user/:id:
     delete:
       description: DeleteUserProfile Removes the authenticated user's profile if JWT
         is valid
@@ -148,6 +172,167 @@ paths:
       summary: Delete user profile
       tags:
       - Delete Profile
+  /user/email/verify:
+    get:
+      consumes:
+      - application/json
+      description: Confirms the user's email verification
+      parameters:
+      - description: Verification Token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid or expired token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify Email
+      tags:
+      - Email Verification
+  /user/email/verify/request:
+    post:
+      consumes:
+      - application/json
+      description: Sends an email with a verification link to the user
+      parameters:
+      - description: Email verification request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RequestEmailVerification'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification email sent successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request Email Verification
+      tags:
+      - Email Verification
+  /user/password-reset/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Verifies reset token and updates user password
+      parameters:
+      - description: New password and token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successful
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Invalid or expired token
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reset User Password
+      tags:
+      - Authentication
+  /user/password-reset/request:
+    post:
+      consumes:
+      - application/json
+      description: Sends a password reset link to the user's email
+      parameters:
+      - description: User email for password reset
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset link sent
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: User not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request Password Reset
+      tags:
+      - Authentication
   /user/profile:
     get:
       description: Returns the currently logged-in user's profile if JWT is valid
@@ -199,7 +384,7 @@ paths:
             additionalProperties:
               type: string
             type: object
-        "501":
+        "404":
           description: User Not Found
           schema:
             additionalProperties:

@@ -1,1 +1,4 @@
 .env
+txt.txt
+internal/utils/email_utils.go
+task-manager-frontend

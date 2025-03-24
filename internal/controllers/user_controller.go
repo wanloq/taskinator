@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -27,27 +28,43 @@ func RegisterUser(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	hashedPassword := req.Password
-
-	// user model
-	user := models.User{
-		Username:      req.Username,
-		Email:         req.Email,
-		Password_Hash: hashedPassword,
+	// Check if user already exists
+	existingUser, _ := repositories.GetUserByEmail(req.Email)
+	if existingUser != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Email already in use"})
 	}
+
 	// Hash the password before saving
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	user.Password_Hash = hashedPassword
+
+	// user model
+	user := models.User{
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: hashedPassword,
+		IsVerified:   false,
+	}
+	user.PasswordHash = hashedPassword
 
 	// Save user to database
 	if err := repositories.CreateUser(&user); err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.Status(http.StatusCreated).JSON(fiber.Map{"message": "User registered successfully"})
+	// Generate verification token
+	verificationToken, err := utils.GenerateEmailVerificationToken(user.Email)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not generate verification token"})
+	}
+
+	// Send verification email
+	log.Println("Sending verification mail to ", user.Email)
+	go utils.SendVerificationEmail(user.Email, verificationToken)
+
+	return c.Status(http.StatusCreated).JSON(fiber.Map{"message": "User registered successfully. Please verify your email."})
 }
 
 // @Summary User Login
@@ -72,8 +89,12 @@ func LoginUser(c *fiber.Ctx) error {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	if !user.IsVerified {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User email not verified"})
+	}
+
 	// Compare hashed password
-	if !utils.ComparePasswords(user.Password_Hash, req.Password) {
+	if !utils.ComparePasswords(user.PasswordHash, req.Password) {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})
 	}
 
@@ -95,13 +116,8 @@ func LoginUser(c *fiber.Ctx) error {
 // @Failure 401 {object} map[string]string "Unauthorized"
 // @Router /user/profile [get]
 func GetUserProfile(c *fiber.Ctx) error {
-
-	// userID := c.Locals("user_id")
-	// email := c.Locals("email")
-	// role := c.Locals("role")
-
 	// Extract user ID from JWT token
-	userID, err := utils.ExtractUserIDFromToken(c)
+	userID, _, err := utils.ExtractUserFromToken(c)
 	if err != nil {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -117,6 +133,7 @@ func GetUserProfile(c *fiber.Ctx) error {
 		"username": user.Username,
 		"email":    user.Email,
 		"role":     user.Role,
+		"status":   user.IsVerified,
 	})
 }
 
@@ -133,7 +150,7 @@ func GetUserProfile(c *fiber.Ctx) error {
 // @Router /user/update [put]
 func UpdateUserProfile(c *fiber.Ctx) error {
 	// Extract user ID from JWT token
-	userID, err := utils.ExtractUserIDFromToken(c)
+	userID, _, err := utils.ExtractUserFromToken(c)
 	if err != nil {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -164,7 +181,7 @@ func UpdateUserProfile(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Error hashing password"})
 		}
-		user.Password_Hash = string(hashedPassword)
+		user.PasswordHash = string(hashedPassword)
 	}
 
 	// Save updated user
@@ -183,10 +200,11 @@ func UpdateUserProfile(c *fiber.Ctx) error {
 // @Success 200 {object} map[string]string "Profile deleted successfully"
 // @Failure 401 {object} map[string]string "Unauthorized"
 // @Failure 404 {object} map[string]string "User Not Found"
-// @Router /user/delete [delete]
+// // @Router /user/delete [delete]
+// @Router /user/admin/delete-user/:id [delete]
 func DeleteUserProfile(c *fiber.Ctx) error {
 	// Extract user ID from JWT token
-	userID, err := utils.ExtractUserIDFromToken(c)
+	userID, _, err := utils.ExtractUserFromToken(c)
 	if err != nil {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
@@ -203,4 +221,152 @@ func DeleteUserProfile(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"message": "Profile deleted successfully"})
+}
+
+// @Summary Request Email Verification
+// @Description Sends an email with a verification link to the user
+// @Tags Email Verification
+// @Accept json
+// @Produce json
+// @Param request body dto.RequestEmailVerification true "Email verification request"
+// @Success 200 {object} map[string]string "Verification email sent successfully"
+// @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /user/email/verify/request [post]
+func RequestEmailVerification(c *fiber.Ctx) error {
+	var req dto.RequestEmailVerification
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	// Check if user exists
+	user, err := repositories.GetUserByEmail(req.Email)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Generate email verification token
+	verificationToken, err := utils.GenerateEmailVerificationToken(user.Email)
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Could not generate verification token"})
+	}
+
+	// Send verification email
+	log.Println("Sending verification mail to ", user.Email)
+	err = utils.SendVerificationEmail(user.Email, verificationToken)
+	if err != nil {
+		log.Println("Could not Send verification mail to ", user.Email, err)
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Verification email sent successfully"})
+}
+
+// @Summary Verify Email
+// @Description Confirms the user's email verification
+// @Tags Email Verification
+// @Accept json
+// @Produce json
+// @Param token query string true "Verification Token"
+// @Success 200 {object} map[string]string "Email verified successfully"
+// @Failure 400 {object} map[string]string "Invalid or expired token"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /user/email/verify [get]
+func VerifyEmail(c *fiber.Ctx) error {
+	token := c.Query("token")
+	if token == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Missing verification token"})
+	}
+
+	email, err := utils.VerifyEmailToken(token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid or expired token"})
+	}
+
+	// Extract user info
+	user, err := repositories.GetUserByEmail(email)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	if user.IsVerified {
+		return c.JSON(fiber.Map{"message": "Email already verified."})
+	}
+
+	// Update and Save user
+	user.IsVerified = true
+	if err := repositories.UpdateUser(user); err != nil {
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Could not update user"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Email successfully verified. You may now log in."})
+}
+
+// @Summary Request Password Reset
+// @Description Sends a password reset link to the user's email
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body dto.PasswordResetRequest true "User email for password reset"
+// @Success 200 {object} map[string]string "Password reset link sent"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 404 {object} map[string]string "User not found"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /user/password-reset/request [post]
+func RequestPasswordReset(c *fiber.Ctx) error {
+	var req dto.PasswordResetRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	user, err := repositories.GetUserByEmail(req.Email)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+	}
+
+	// Generate password reset token
+	resetToken, err := utils.GeneratePasswordResetToken(user.Email)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not generate reset token"})
+	}
+
+	// Send email with password reset link
+	go utils.SendPasswordResetEmail(user.Email, resetToken)
+
+	return c.JSON(fiber.Map{"message": "Password reset link sent to your email."})
+}
+
+// @Summary Reset User Password
+// @Description Verifies reset token and updates user password
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param request body dto.ResetRequest true "New password and token"
+// @Success 200 {object} map[string]string "Password reset successful"
+// @Failure 400 {object} map[string]string "Invalid request"
+// @Failure 401 {object} map[string]string "Invalid or expired token"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /user/password-reset/confirm [post]
+func PasswordReset(c *fiber.Ctx) error {
+	var req dto.ResetRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	email, err := utils.VerifyPasswordResetToken(req.Token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid or expired token"})
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not hash password"})
+	}
+
+	err = repositories.UpdateUserPassword(email, string(hashedPassword))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Could not update password"})
+	}
+
+	return c.JSON(fiber.Map{"message": "Password successfully reset."})
 }

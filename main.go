@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 
-	"github.com/golang-jwt/jwt/v4"
 	_ "github.com/wanloq/taskinator/docs"
 	"github.com/wanloq/taskinator/internal/config"
 	"github.com/wanloq/taskinator/internal/routes"
@@ -27,15 +25,6 @@ var tasks = []Task{
 	{ID: 3, Name: "Integrate Swagger", Status: true},
 }
 
-type CustomClaims struct {
-	UserID    uint   `json:"user_id"`
-	UserEmail string `json:"user_email"`
-	Role      string `json:"role"`
-	jwt.RegisteredClaims
-}
-
-var secretKey = []byte("your_secret_key")
-
 // @title Taskinator API
 // @version 1.0
 // @description A simple Task Manager API using Fiber and Swagger implemeneted in Go
@@ -47,7 +36,7 @@ var secretKey = []byte("your_secret_key")
 // @name Authorization
 
 func main() {
-	// Load config
+	// Load config file
 	if err := config.LoadConfig(); err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
@@ -81,11 +70,6 @@ func main() {
 	if err := app.Listen(fmt.Sprintf(":%s", port)); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-}
-
-// Home
-func Home(c *fiber.Ctx) error {
-	return c.SendString("Welcome to your Taskinator!")
 }
 
 // View all tasks
@@ -150,69 +134,4 @@ func DeleteTask(c *fiber.Ctx) error {
 		}
 	}
 	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Task not found"})
-}
-
-// // @Summary Get user profile
-// // @Description Returns user profile if JWT is valid
-// // @Tags Profile
-// // @Security BearerAuth
-// // @Produce json
-// // @Success 200 {object} map[string]string "User profile"
-// // @Failure 401 {object} map[string]string "Unauthorized"
-// // @Router /profile [get]
-// func Profile(c *fiber.Ctx) error {
-// 	authHeader := c.Get("Authorization")
-// 	if authHeader == "" {
-// 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Missing token"})
-// 	}
-
-// 	tokenString := authHeader[len("Bearer "):]
-// 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
-// 		return secretKey, nil
-// 	})
-
-// 	if err != nil || !token.Valid {
-// 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
-// 	}
-
-// 	claims, _ := token.Claims.(*CustomClaims)
-// 	return c.JSON(fiber.Map{
-// 		"user_id":   claims.UserID,
-// 		"role":      claims.Role,
-// 		"issued_at": claims.IssuedAt.Time.Format(time.RFC3339),
-// 	})
-// }
-
-func GenerateJWT(userID uint, userEmail, role string) (string, error) {
-	// var req TokenRequest
-	claims := CustomClaims{
-		UserID: userID,
-		Role:   role,
-		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secretKey)
-
-}
-
-func VerifyJWT(tokenString string) (*jwt.Token, error) {
-	claims := &CustomClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		return secretKey, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if token.Valid {
-		fmt.Println("User ID:", claims.UserID)
-		fmt.Println("Role:", claims.Role)
-		return token, nil
-	}
-
-	return nil, fmt.Errorf("invalid token")
 }

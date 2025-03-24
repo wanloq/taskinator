@@ -30,3 +30,16 @@ type Claims struct {
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
+
+type RequestEmailVerification struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type PasswordResetRequest struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetRequest struct {
+	Token       string `json:"token" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=6"`
+}

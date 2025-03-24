@@ -34,3 +34,21 @@ func JWTMiddleware(c *fiber.Ctx) error {
 
 	return c.Next()
 }
+
+func RoleMiddleware(requiredRole string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID, role, err := utils.ExtractUserFromToken(c)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		}
+
+		// Check if the user's role matches the required role
+		if role != requiredRole {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied"})
+		}
+
+		// Allow the request to proceed
+		c.Locals("userID", userID)
+		return c.Next()
+	}
+}
