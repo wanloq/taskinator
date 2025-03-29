@@ -1,0 +1,53 @@
+# version: "3.9"
+services:
+  db:
+    image: postgres:15
+    container_name: taskinator_db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: wanloq
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: taskinator
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wanloq -d taskinator"]
+      interval: 10s
+      retries: 5
+
+  app:
+    build: .
+    env_file:
+      - .env 
+    image: taskinator-app
+    container_name: taskinator-app
+    restart: always
+    environment:
+      - SMTP_USERNAME_FILE=/run/secrets/smtp_username
+      - SMTP_PASSWORD_FILE=/run/secrets/smtp_password
+      - DATABASE_URL=${DATABASE_URL}
+    secrets:
+      - smtp_username
+      - smtp_password
+    ports:
+      - "8080:8080"
+    command: ["air"]
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .env:/app/.env 
+      - .:/app
+
+secrets:
+  smtp_username:
+    file: ./secrets/smtp_username
+  smtp_password:
+    file: ./secrets/smtp_password
+volumes:
+  db_data:
+

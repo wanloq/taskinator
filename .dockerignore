@@ -1,0 +1,10 @@
+main
+*.exe
+*.out
+*.o
+
+vendor/
+
+.env
+logs/
+txt.txt

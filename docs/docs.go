@@ -308,7 +308,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                            "$ref": "#/definitions/dto.ResetRequest"
                         }
                     }
                 ],
@@ -372,7 +372,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ResetRequest"
+                            "$ref": "#/definitions/dto.PasswordResetRequest"
                         }
                     }
                 ],
@@ -530,6 +530,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.PasswordResetRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.RegisterRequest": {
             "type": "object",
             "required": [
@@ -561,7 +572,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ResetPasswordRequest": {
+        "dto.ResetRequest": {
             "type": "object",
             "required": [
                 "new_password",
@@ -573,17 +584,6 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.ResetRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
                     "type": "string"
                 }
             }
@@ -623,7 +623,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{"http"},
 	Title:            "Taskinator API",
-	Description:      "A simple Task Manager API using Fiber and Swagger implemeneted in Go",
+	Description:      "A simple Task Manager API using Fiber and Swagger implemented in Go",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

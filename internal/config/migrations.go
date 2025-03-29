@@ -10,11 +10,13 @@ import (
 // RunMigrations executes database migrations using golang-migrate
 func RunMigrations() error {
 	migrationsPath := "db/migrations"
+	migratePath := "migrate"
+	// migratePath := "/usr/local/bin/migrate"
 
-	cmd := exec.Command("migrate", "-database", os.Getenv("DATABASE_URL"), "-path", migrationsPath, "up")
+	cmd := exec.Command(migratePath, "-database", os.Getenv("DATABASE_URL"), "-path", migrationsPath, "up")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("Migration failed: %s\nError: %v", string(output), err)
+		log.Fatalf("DB Migration failed: %s\nError: %v", string(output), err)
 		return err
 	}
 

@@ -10,6 +10,13 @@ definitions:
     - email
     - password
     type: object
+  dto.PasswordResetRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   dto.RegisterRequest:
     properties:
       email:
@@ -31,7 +38,7 @@ definitions:
     required:
     - email
     type: object
-  dto.ResetPasswordRequest:
+  dto.ResetRequest:
     properties:
       new_password:
         minLength: 6
@@ -41,13 +48,6 @@ definitions:
     required:
     - new_password
     - token
-    type: object
-  dto.ResetRequest:
-    properties:
-      email:
-        type: string
-    required:
-    - email
     type: object
   dto.UpdateRequest:
     properties:
@@ -64,7 +64,7 @@ definitions:
 host: localhost:3000
 info:
   contact: {}
-  description: A simple Task Manager API using Fiber and Swagger implemeneted in Go
+  description: A simple Task Manager API using Fiber and Swagger implemented in Go
   title: Taskinator API
   version: "1.0"
 paths:
@@ -260,7 +260,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.ResetPasswordRequest'
+          $ref: '#/definitions/dto.ResetRequest'
       produces:
       - application/json
       responses:
@@ -302,7 +302,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.ResetRequest'
+          $ref: '#/definitions/dto.PasswordResetRequest'
       produces:
       - application/json
       responses:

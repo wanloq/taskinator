@@ -4,7 +4,7 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "A simple Task Manager API using Fiber and Swagger implemeneted in Go",
+        "description": "A simple Task Manager API using Fiber and Swagger implemented in Go",
         "title": "Taskinator API",
         "contact": {},
         "version": "1.0"
@@ -305,7 +305,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                            "$ref": "#/definitions/dto.ResetRequest"
                         }
                     }
                 ],
@@ -369,7 +369,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ResetRequest"
+                            "$ref": "#/definitions/dto.PasswordResetRequest"
                         }
                     }
                 ],
@@ -527,6 +527,17 @@
                 }
             }
         },
+        "dto.PasswordResetRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.RegisterRequest": {
             "type": "object",
             "required": [
@@ -558,7 +569,7 @@
                 }
             }
         },
-        "dto.ResetPasswordRequest": {
+        "dto.ResetRequest": {
             "type": "object",
             "required": [
                 "new_password",
@@ -570,17 +581,6 @@
                     "minLength": 6
                 },
                 "token": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.ResetRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
                     "type": "string"
                 }
             }

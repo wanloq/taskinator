@@ -27,7 +27,7 @@ var tasks = []Task{
 
 // @title Taskinator API
 // @version 1.0
-// @description A simple Task Manager API using Fiber and Swagger implemeneted in Go
+// @description A simple Task Manager API using Fiber and Swagger implemented in Go
 // @host localhost:3000
 // @BasePath /
 // @schemes http
@@ -63,11 +63,11 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "3000"
+		port = "8080"
 	}
 
-	log.Printf("Server running on http://localhost:%s/swagger/", port)
-	if err := app.Listen(fmt.Sprintf(":%s", port)); err != nil {
+	log.Printf("Server running on http://0.0.0.0:%s/swagger/", port)
+	if err := app.Listen(fmt.Sprintf("0.0.0.0:%s", port)); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

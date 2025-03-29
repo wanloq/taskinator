@@ -90,9 +90,24 @@ func LoginUser(c *fiber.Ctx) error {
 	}
 
 	if !user.IsVerified {
+		go func() {
+			// Generate email verification token
+			verificationToken, err := utils.GenerateEmailVerificationToken(user.Email)
+			if err != nil {
+				log.Println("Could not generate verification token", err)
+				return
+			}
+
+			// Send verification email
+			log.Println("Sending verification mail to ", user.Email)
+			err = utils.SendVerificationEmail(user.Email, verificationToken)
+			if err != nil {
+				log.Println("Could not send verification mail to ", user.Email, err)
+				return
+			}
+		}()
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User email not verified"})
 	}
-
 	// Compare hashed password
 	if !utils.ComparePasswords(user.PasswordHash, req.Password) {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid credentials"})

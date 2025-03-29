@@ -6,7 +6,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// JWTSecret is used for signing JWT tokens
 var JWTSecretKey []byte
 
 // LoadConfig loads environment variables
