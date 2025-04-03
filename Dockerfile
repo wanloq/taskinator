@@ -7,11 +7,11 @@ RUN apk --no-cache add curl
 WORKDIR /app
 
 # Install Air for hot reloading
-RUN go install github.com/air-verse/air@latest
+# RUN go install github.com/air-verse/air@latest
 
 # Copy Go modules first (for better caching)
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod tidy
 
 # Copy the rest of the source code
 COPY . .
@@ -25,21 +25,21 @@ RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate
 RUN go build -o main .
 
 # 🚀 Stage 2: Run container with hot reloading
-FROM golang:1.23.2-alpine
+# FROM golang:1.23.2-alpine
+FROM gcr.io/distroless/static:nonroot
 
-WORKDIR /app
+
+WORKDIR /root/
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/main .
 COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
-COPY --from=builder /go/bin/air /usr/local/bin/air
+# COPY --from=builder /go/bin/air /usr/local/bin/air
 COPY . .
 
-# Ensure the binary is executable
-RUN chmod +x /app/main
-
 # Expose the application port
-EXPOSE 8080
+EXPOSE 8000
 
-# Run Air for automatic reload
-CMD ["air"]
+# Run the application
+# CMD ["air"]
+CMD ["./main"]

@@ -11,6 +11,9 @@ func SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
 
 	// Public routes
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Welcome to Taskinator!")
+	})
 	app.Get("/swagger/*", swagger.HandlerDefault)
 	api.Post("/register", controllers.RegisterUser)
 	api.Post("/login", controllers.LoginUser)

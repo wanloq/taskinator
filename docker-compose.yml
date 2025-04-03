@@ -4,12 +4,21 @@ services:
     image: postgres:15
     container_name: taskinator_db
     restart: always
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     environment:
-      POSTGRES_USER: wanloq
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: taskinator
+      - POSTGRES_DB_FILE=/run/secrets/db_name
+      - POSTGRES_USER_FILE=/run/secrets/db_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_HOST_FILE=/run/secrets/db_host
+      # POSTGRES_USER: wanloq
+      # POSTGRES_PASSWORD: admin
+      # POSTGRES_DB:taskinator
+    secrets:
+      - db_name
+      - db_user
+      - db_password
+      - db_host
     ports:
       - "5432:5432"
     volumes:
@@ -19,35 +28,54 @@ services:
       interval: 10s
       retries: 5
 
+
   app:
     build: .
-    env_file:
-      - .env 
+    # env_file:
+    #   - .env 
     image: taskinator-app
     container_name: taskinator-app
     restart: always
     environment:
+      - ENV=production
       - SMTP_USERNAME_FILE=/run/secrets/smtp_username
       - SMTP_PASSWORD_FILE=/run/secrets/smtp_password
-      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET_FILE=/run/secrets/jwt_key
+      - DATABASE_URL_FILE=/run/secrets/db_url
+      - PORT_FILE=/run/secrets/port
     secrets:
       - smtp_username
       - smtp_password
+      - jwt_key
+      - db_url
+      - port
     ports:
-      - "8080:8080"
-    command: ["air"]
+      - "8000:8000"
+    command: ["/bin/sh", "-c", "migrate -database ${DATABASE_URL} -path ./migrations up && ./main"]
+
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - .env:/app/.env 
-      - .:/app
-
+      - ./secrets:/run/secrets
 secrets:
   smtp_username:
     file: ./secrets/smtp_username
   smtp_password:
     file: ./secrets/smtp_password
+  db_user:
+    file: ./secrets/db_user
+  db_password:
+    file: ./secrets/db_password
+  db_host:
+    file: ./secrets/db_host
+  db_name:
+    file: ./secrets/db_name
+  db_url:
+    file: ./secrets/db_url
+  port:
+    file: ./secrets/port
+  jwt_key:
+    file: ./secrets/jwt_key
 volumes:
   db_data:
-

@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
-	"os"
+
+	"github.com/wanloq/taskinator/internal/config"
 )
 
 // Email configuration
@@ -14,21 +15,13 @@ const (
 	linkTimeout = 5
 )
 
-func ReadSecretFile(path string) (string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
 // LoadEmailConfig returns email configurations (SMTPUsername and SMTPPassword) or an error .
 func LoadEmailConfig() (string, string, error) {
-	SMTPUsername, err := ReadSecretFile("/run/secrets/smtp_username")
+	SMTPUsername, err := config.ReadSecretFile("/run/secrets/smtp_username")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to load SMTP username: %w", err)
 	}
-	SMTPPassword, err := ReadSecretFile("/run/secrets/smtp_password")
+	SMTPPassword, err := config.ReadSecretFile("/run/secrets/smtp_password")
 	if err != nil {
 		return "", "", fmt.Errorf("failed to load SMTP password: %w", err)
 	}
