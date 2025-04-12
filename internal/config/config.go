@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -14,7 +15,7 @@ func ReadSecretFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(data), nil
+	return strings.TrimSpace(string(data)), nil
 }
 
 // LoadConfig loads environment variables
@@ -38,20 +39,7 @@ func LoadConfig() error {
 		log.Println("Config successfully loaded for development environment")
 		return nil
 	}
-	// load secrets from secrets dir
-
-	// _, err := ReadSecretFile("./secrets/db_url")
-	// if err != nil {
-	// 	return fmt.Errorf("failed to load DB name: %w", err)
-	// }
-
-	// jwt_key, err := ReadSecretFile("./secrets/jwt_key")
-	// if err != nil {
-	// 	return fmt.Errorf("failed to load DB name: %w", err)
-	// }
-
-	// JWTSecretKey = []byte(jwt_key)
-
+	log.Println("Config already loaded for production environment")
 	// return fmt.Errorf("nothing loaded in %s environment", env)
 	return nil
 }

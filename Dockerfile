@@ -25,8 +25,8 @@ RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate
 RUN go build -o main .
 
 # 🚀 Stage 2: Run container with hot reloading
-# FROM golang:1.23.2-alpine
-FROM gcr.io/distroless/static:nonroot
+FROM golang:1.23.2-alpine
+# FROM gcr.io/distroless/static:nonroot
 
 
 WORKDIR /root/
@@ -35,11 +35,16 @@ WORKDIR /root/
 COPY --from=builder /app/main .
 COPY --from=builder /go/bin/migrate /usr/local/bin/migrate
 # COPY --from=builder /go/bin/air /usr/local/bin/air
+COPY entrypoint.sh .
 COPY . .
+
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
 
 # Expose the application port
 EXPOSE 8000
 
 # Run the application
 # CMD ["air"]
-CMD ["./main"]
+# CMD ["./main"]
+ENTRYPOINT ["./entrypoint.sh"]

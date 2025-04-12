@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -20,22 +21,23 @@ func ConnectDB() (*gorm.DB, error) {
 	// 	log.Println(err)
 	// 	return nil, err
 	// }
-
+	var err error
+	databaseURL := os.Getenv("DATABASE_URL")
 	// Prioritize DATABASE_URL if set (for Docker compatibility)
-	databaseURL, err := LoadDBURL()
-	if err != nil {
-		log.Fatal("Failed to connect to the database:", err)
+	if databaseURL == "" {
+		databaseURL, err = LoadDBURL()
+		if err != nil {
+			log.Fatal("Failed to connect to the database:", err)
+		}
+		// 	databaseURL = fmt.Sprintf(
+		// 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		// 		os.Getenv("DB_HOST"),
+		// 		os.Getenv("DB_USER"),
+		// 		os.Getenv("DB_PASSWORD"),
+		// 		os.Getenv("DB_NAME"),
+		// 		os.Getenv("DB_PORT"),
+		// 	)
 	}
-	// if databaseURL == "" {
-	// 	databaseURL = fmt.Sprintf(
-	// 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-	// 		os.Getenv("DB_HOST"),
-	// 		os.Getenv("DB_USER"),
-	// 		os.Getenv("DB_PASSWORD"),
-	// 		os.Getenv("DB_NAME"),
-	// 		os.Getenv("DB_PORT"),
-	// 	)
-	// }
 
 	// Connect to PostgreSQL
 	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
@@ -58,7 +60,7 @@ func CloseDB(db *gorm.DB) {
 	sqlDB.Close()
 }
 
-// LoadEmailConfig returns DB configurations (Username, Password, Name and Host) or an error .
+// LoadEmailConfig returns DB URL or an error from secrets file.
 func LoadDBURL() (DBURL string, err error) {
 
 	DBURL, err = ReadSecretFile("./secrets/db_url")
